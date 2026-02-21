@@ -14,13 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          account_number: string
+          balance: number
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          total_deposited: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number: string
+          balance?: number
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          total_deposited?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: string
+          balance?: number
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          total_deposited?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          recipient_id: string | null
+          recipient_info: string | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          recipient_id?: string | null
+          recipient_info?: string | null
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          recipient_id?: string | null
+          recipient_info?: string | null
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_account_number: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
