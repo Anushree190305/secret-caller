@@ -1,56 +1,61 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-
-interface User {
-  name: string;
-  email: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import type { User, Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  signup: (name: string, email: string, password: string) => { success: boolean; error?: string };
-  logout: () => void;
+  session: Session | null;
+  loading: boolean;
+  signUp: (name: string, email: string, phone: string, password: string) => Promise<{ error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("netflix_user");
-    if (stored) {
-      try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signup = (name: string, email: string, password: string) => {
-    const users = JSON.parse(localStorage.getItem("netflix_users") || "[]");
-    if (users.find((u: any) => u.email === email)) {
-      return { success: false, error: "Email already registered" };
-    }
-    users.push({ name, email, password });
-    localStorage.setItem("netflix_users", JSON.stringify(users));
-    return { success: true };
+  const signUp = async (name: string, email: string, phone: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name, phone } },
+    });
+    if (error) return { error: error.message };
+    return {};
   };
 
-  const login = (email: string, password: string) => {
-    const users = JSON.parse(localStorage.getItem("netflix_users") || "[]");
-    const found = users.find((u: any) => u.email === email && u.password === password);
-    if (!found) return { success: false, error: "Invalid email or password" };
-    const userData = { name: found.name, email: found.email };
-    setUser(userData);
-    localStorage.setItem("netflix_user", JSON.stringify(userData));
-    return { success: true };
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    return {};
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("netflix_user");
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
